@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calculator as CalcIcon, DollarSign, Percent, Calendar, RotateCcw, ChevronDown, ChevronUp, PieChart as PieChartIcon } from "lucide-react";
+import { Calculator as CalcIcon, DollarSign, Percent, Calendar, RotateCcw, ChevronDown, ChevronUp, PieChart as PieChartIcon, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   PieChart,
   Pie,
@@ -50,29 +51,48 @@ export default function Calculator() {
   const [results, setResults] = useState<LoanResults | null>(null);
   const [schedule, setSchedule] = useState<AmortizationPayment[]>([]);
   const [showSchedule, setShowSchedule] = useState(false);
+  const [extraPayment, setExtraPayment] = useState("");
+  const [extraPaymentType, setExtraPaymentType] = useState<"monthly" | "onetime">("monthly");
+  const [showExtraPayment, setShowExtraPayment] = useState(false);
   const { toast } = useToast();
 
   const calculateAmortizationSchedule = (
     principal: number,
     monthlyRate: number,
     months: number,
-    monthlyPayment: number
+    monthlyPayment: number,
+    extraPaymentAmount: number = 0,
+    isOneTime: boolean = false
   ): AmortizationPayment[] => {
     const schedule: AmortizationPayment[] = [];
     let remainingBalance = principal;
+    let paymentNumber = 1;
 
-    for (let i = 1; i <= months; i++) {
+    while (remainingBalance > 0.01 && paymentNumber <= months * 2) {
       const interestPayment = remainingBalance * monthlyRate;
-      const principalPayment = monthlyPayment - interestPayment;
+      let scheduledPayment = monthlyPayment;
+      
+      if (extraPaymentAmount > 0) {
+        if (isOneTime && paymentNumber === 1) {
+          scheduledPayment += extraPaymentAmount;
+        } else if (!isOneTime) {
+          scheduledPayment += extraPaymentAmount;
+        }
+      }
+
+      const actualPayment = Math.min(scheduledPayment, interestPayment + remainingBalance);
+      const principalPayment = actualPayment - interestPayment;
       remainingBalance -= principalPayment;
 
       schedule.push({
-        paymentNumber: i,
-        payment: monthlyPayment,
+        paymentNumber: paymentNumber,
+        payment: actualPayment,
         principal: principalPayment,
         interest: interestPayment,
         balance: Math.max(0, remainingBalance),
       });
+
+      paymentNumber++;
     }
 
     return schedule;
@@ -109,6 +129,49 @@ export default function Calculator() {
     const amortizationSchedule = calculateAmortizationSchedule(P, r, n, monthlyPayment);
     setSchedule(amortizationSchedule);
     setShowSchedule(false);
+    setShowExtraPayment(false);
+  };
+
+  const calculateWithExtraPayment = () => {
+    if (!results) return;
+
+    const extraAmount = parseFloat(extraPayment);
+    if (!extraAmount || extraAmount <= 0) {
+      toast({
+        title: "Invalid Extra Payment",
+        description: "Please enter a valid positive number for extra payment.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const P = parseFloat(results.principal);
+    const annualRate = parseFloat(rate);
+    const r = annualRate / 100 / 12;
+    const monthlyPayment = parseFloat(results.monthlyPayment);
+
+    const newSchedule = calculateAmortizationSchedule(
+      P,
+      r,
+      parseFloat(years) * 12,
+      monthlyPayment,
+      extraAmount,
+      extraPaymentType === "onetime"
+    );
+
+    setSchedule(newSchedule);
+    setShowSchedule(false);
+    setShowExtraPayment(true);
+
+    const totalPaid = newSchedule.reduce((sum, payment) => sum + payment.payment, 0);
+    const totalInterestPaid = totalPaid - P;
+    const monthsSaved = (parseFloat(years) * 12) - newSchedule.length;
+    const interestSaved = parseFloat(results.totalInterest) - totalInterestPaid;
+
+    toast({
+      title: "Extra Payment Impact",
+      description: `You'll pay off your loan ${monthsSaved} months early and save ${formatCurrency(interestSaved)} in interest!`,
+    });
   };
 
   const resetForm = () => {
@@ -118,6 +181,8 @@ export default function Calculator() {
     setResults(null);
     setSchedule([]);
     setShowSchedule(false);
+    setExtraPayment("");
+    setShowExtraPayment(false);
   };
 
   const formatCurrency = (value: string | number) => {
@@ -285,6 +350,93 @@ export default function Calculator() {
                     </div>
                   </div>
                 </div>
+
+                <Card className="mt-6">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-2">
+                      <PlusCircle className="w-5 h-5 text-primary" />
+                      <CardTitle className="text-base">Extra Payment Calculator</CardTitle>
+                    </div>
+                    <CardDescription>
+                      See how extra payments can reduce your loan term and save interest
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium">Extra Payment Type</Label>
+                      <RadioGroup
+                        value={extraPaymentType}
+                        onValueChange={(value) => setExtraPaymentType(value as "monthly" | "onetime")}
+                        className="flex gap-4"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="monthly" id="monthly" data-testid="radio-monthly" />
+                          <Label htmlFor="monthly" className="font-normal cursor-pointer">
+                            Monthly Recurring
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="onetime" id="onetime" data-testid="radio-onetime" />
+                          <Label htmlFor="onetime" className="font-normal cursor-pointer">
+                            One-Time Payment
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="extraPayment" className="text-sm font-medium">
+                        Extra Payment Amount
+                      </Label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          id="extraPayment"
+                          type="number"
+                          value={extraPayment}
+                          onChange={(e) => setExtraPayment(e.target.value)}
+                          placeholder="100"
+                          className="pl-9 h-12"
+                          min="0"
+                          step="10"
+                          data-testid="input-extra-payment"
+                        />
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={calculateWithExtraPayment}
+                      variant="secondary"
+                      className="w-full h-12 font-semibold"
+                      data-testid="button-calculate-extra"
+                    >
+                      <PlusCircle className="w-4 h-4 mr-2" />
+                      Calculate with Extra Payment
+                    </Button>
+
+                    {showExtraPayment && schedule.length > 0 && (
+                      <div className="mt-4 p-4 rounded-lg bg-muted/50 space-y-2">
+                        <p className="text-sm font-semibold text-primary">
+                          Impact Summary
+                        </p>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <p className="text-muted-foreground">New Payoff Time</p>
+                            <p className="font-semibold" data-testid="text-new-payoff-time">
+                              {schedule.length} months ({Math.floor(schedule.length / 12)} years {schedule.length % 12} months)
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Months Saved</p>
+                            <p className="font-semibold text-chart-2" data-testid="text-months-saved">
+                              {(parseFloat(years) * 12) - schedule.length} months
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
                 {schedule.length > 0 && (
                   <div className="mt-6 space-y-4">
