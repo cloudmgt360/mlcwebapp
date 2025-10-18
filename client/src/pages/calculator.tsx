@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calculator as CalcIcon, DollarSign, Percent, Calendar, RotateCcw, ChevronDown, ChevronUp, PieChart as PieChartIcon, PlusCircle, Trash2, GitCompare } from "lucide-react";
+import { Calculator as CalcIcon, DollarSign, Percent, Calendar, RotateCcw, ChevronDown, ChevronUp, PieChart as PieChartIcon, PlusCircle, Trash2, GitCompare, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -220,6 +220,76 @@ export default function Calculator() {
     toast({
       title: "Comparison Cleared",
       description: "All scenarios have been removed.",
+    });
+  };
+
+  const exportScheduleToCSV = () => {
+    if (schedule.length === 0) return;
+
+    const headers = ['Month', 'Payment', 'Principal', 'Interest', 'Balance'];
+    const rows = schedule.map(payment => [
+      payment.paymentNumber,
+      payment.payment.toFixed(2),
+      payment.principal.toFixed(2),
+      payment.interest.toFixed(2),
+      payment.balance.toFixed(2),
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(',')),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'amortization_schedule.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Export Successful",
+      description: "Amortization schedule has been downloaded.",
+    });
+  };
+
+  const exportComparisonToCSV = () => {
+    if (scenarios.length === 0) return;
+
+    const headers = ['Scenario', 'Loan Amount', 'Rate (%)', 'Term (years)', 'Monthly Payment', 'Total Payment', 'Total Interest'];
+    const rows = scenarios.map(scenario => [
+      `"${scenario.name.replace(/"/g, '""')}"`,
+      parseFloat(scenario.amount).toFixed(2),
+      parseFloat(scenario.rate).toFixed(2),
+      parseFloat(scenario.years).toFixed(2),
+      parseFloat(scenario.monthlyPayment).toFixed(2),
+      parseFloat(scenario.totalPayment).toFixed(2),
+      parseFloat(scenario.totalInterest).toFixed(2),
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(',')),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'loan_comparison.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Export Successful",
+      description: "Comparison data has been downloaded.",
     });
   };
 
@@ -646,10 +716,23 @@ export default function Calculator() {
                       <CollapsibleContent className="mt-4">
                         <Card>
                           <CardHeader className="pb-3">
-                            <CardTitle className="text-base">Payment Breakdown</CardTitle>
-                            <CardDescription>
-                              Month-by-month details of your loan payments
-                            </CardDescription>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <CardTitle className="text-base">Payment Breakdown</CardTitle>
+                                <CardDescription>
+                                  Month-by-month details of your loan payments
+                                </CardDescription>
+                              </div>
+                              <Button
+                                onClick={exportScheduleToCSV}
+                                variant="outline"
+                                size="sm"
+                                data-testid="button-export-schedule"
+                              >
+                                <Download className="w-4 h-4 mr-2" />
+                                Export CSV
+                              </Button>
+                            </div>
                           </CardHeader>
                           <CardContent className="p-0">
                             <ScrollArea className="h-[400px]">
@@ -721,15 +804,26 @@ export default function Calculator() {
                   <GitCompare className="w-5 h-5 text-primary" />
                   <CardTitle>Loan Comparison</CardTitle>
                 </div>
-                <Button
-                  onClick={clearComparison}
-                  variant="ghost"
-                  size="sm"
-                  data-testid="button-clear-comparison"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Clear All
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={exportComparisonToCSV}
+                    variant="outline"
+                    size="sm"
+                    data-testid="button-export-comparison"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Export CSV
+                  </Button>
+                  <Button
+                    onClick={clearComparison}
+                    variant="ghost"
+                    size="sm"
+                    data-testid="button-clear-comparison"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Clear All
+                  </Button>
+                </div>
               </div>
               <CardDescription>
                 Compare different loan scenarios side-by-side
