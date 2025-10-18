@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calculator as CalcIcon, DollarSign, Percent, Calendar, RotateCcw, ChevronDown, ChevronUp, PieChart as PieChartIcon, PlusCircle } from "lucide-react";
+import { Calculator as CalcIcon, DollarSign, Percent, Calendar, RotateCcw, ChevronDown, ChevronUp, PieChart as PieChartIcon, PlusCircle, Trash2, GitCompare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,17 @@ interface LoanResults {
   principal: string;
 }
 
+interface LoanScenario {
+  id: string;
+  name: string;
+  amount: string;
+  rate: string;
+  years: string;
+  monthlyPayment: string;
+  totalPayment: string;
+  totalInterest: string;
+}
+
 interface AmortizationPayment {
   paymentNumber: number;
   payment: number;
@@ -54,6 +65,8 @@ export default function Calculator() {
   const [extraPayment, setExtraPayment] = useState("");
   const [extraPaymentType, setExtraPaymentType] = useState<"monthly" | "onetime">("monthly");
   const [showExtraPayment, setShowExtraPayment] = useState(false);
+  const [scenarios, setScenarios] = useState<LoanScenario[]>([]);
+  const [scenarioName, setScenarioName] = useState("");
   const { toast } = useToast();
 
   const calculateAmortizationSchedule = (
@@ -171,6 +184,42 @@ export default function Calculator() {
     toast({
       title: "Extra Payment Impact",
       description: `You'll pay off your loan ${monthsSaved} months early and save ${formatCurrency(interestSaved)} in interest!`,
+    });
+  };
+
+  const addToComparison = () => {
+    if (!results) return;
+
+    const name = scenarioName.trim() || `Scenario ${scenarios.length + 1}`;
+    const newScenario: LoanScenario = {
+      id: Date.now().toString(),
+      name,
+      amount,
+      rate,
+      years,
+      monthlyPayment: results.monthlyPayment,
+      totalPayment: results.totalPayment,
+      totalInterest: results.totalInterest,
+    };
+
+    setScenarios([...scenarios, newScenario]);
+    setScenarioName("");
+    
+    toast({
+      title: "Scenario Added",
+      description: `"${name}" has been added to comparison.`,
+    });
+  };
+
+  const removeScenario = (id: string) => {
+    setScenarios(scenarios.filter(s => s.id !== id));
+  };
+
+  const clearComparison = () => {
+    setScenarios([]);
+    toast({
+      title: "Comparison Cleared",
+      description: "All scenarios have been removed.",
     });
   };
 
@@ -438,6 +487,44 @@ export default function Calculator() {
                   </CardContent>
                 </Card>
 
+                <Card className="mt-6">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <GitCompare className="w-5 h-5 text-primary" />
+                        <CardTitle className="text-base">Add to Comparison</CardTitle>
+                      </div>
+                    </div>
+                    <CardDescription>
+                      Save this scenario to compare with other loan options
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="scenarioName" className="text-sm font-medium">
+                        Scenario Name (Optional)
+                      </Label>
+                      <Input
+                        id="scenarioName"
+                        value={scenarioName}
+                        onChange={(e) => setScenarioName(e.target.value)}
+                        placeholder={`Scenario ${scenarios.length + 1}`}
+                        className="h-12"
+                        data-testid="input-scenario-name"
+                      />
+                    </div>
+                    <Button
+                      onClick={addToComparison}
+                      variant="secondary"
+                      className="w-full h-12 font-semibold"
+                      data-testid="button-add-to-comparison"
+                    >
+                      <PlusCircle className="w-4 h-4 mr-2" />
+                      Add to Comparison
+                    </Button>
+                  </CardContent>
+                </Card>
+
                 {schedule.length > 0 && (
                   <div className="mt-6 space-y-4">
                     <Card>
@@ -625,6 +712,104 @@ export default function Calculator() {
             )}
           </CardContent>
         </Card>
+
+        {scenarios.length > 0 && (
+          <Card className="mt-8">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <GitCompare className="w-5 h-5 text-primary" />
+                  <CardTitle>Loan Comparison</CardTitle>
+                </div>
+                <Button
+                  onClick={clearComparison}
+                  variant="ghost"
+                  size="sm"
+                  data-testid="button-clear-comparison"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Clear All
+                </Button>
+              </div>
+              <CardDescription>
+                Compare different loan scenarios side-by-side
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="border-b">
+                    <tr>
+                      <th className="text-left py-3 px-3 text-xs font-semibold text-muted-foreground">
+                        Scenario
+                      </th>
+                      <th className="text-right py-3 px-3 text-xs font-semibold text-muted-foreground">
+                        Loan Amount
+                      </th>
+                      <th className="text-right py-3 px-3 text-xs font-semibold text-muted-foreground">
+                        Rate
+                      </th>
+                      <th className="text-right py-3 px-3 text-xs font-semibold text-muted-foreground">
+                        Term
+                      </th>
+                      <th className="text-right py-3 px-3 text-xs font-semibold text-muted-foreground">
+                        Monthly Payment
+                      </th>
+                      <th className="text-right py-3 px-3 text-xs font-semibold text-muted-foreground">
+                        Total Payment
+                      </th>
+                      <th className="text-right py-3 px-3 text-xs font-semibold text-muted-foreground">
+                        Total Interest
+                      </th>
+                      <th className="w-12"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scenarios.map((scenario) => (
+                      <tr
+                        key={scenario.id}
+                        className="border-b last:border-b-0 hover-elevate"
+                        data-testid={`comparison-row-${scenario.id}`}
+                      >
+                        <td className="py-3 px-3 font-medium" data-testid={`scenario-name-${scenario.id}`}>
+                          {scenario.name}
+                        </td>
+                        <td className="py-3 px-3 text-right" data-testid={`scenario-amount-${scenario.id}`}>
+                          {formatCurrency(scenario.amount)}
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          {scenario.rate}%
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          {scenario.years} years
+                        </td>
+                        <td className="py-3 px-3 text-right font-semibold text-primary" data-testid={`scenario-monthly-${scenario.id}`}>
+                          {formatCurrency(scenario.monthlyPayment)}
+                        </td>
+                        <td className="py-3 px-3 text-right" data-testid={`scenario-total-${scenario.id}`}>
+                          {formatCurrency(scenario.totalPayment)}
+                        </td>
+                        <td className="py-3 px-3 text-right text-chart-2" data-testid={`scenario-interest-${scenario.id}`}>
+                          {formatCurrency(scenario.totalInterest)}
+                        </td>
+                        <td className="py-3 px-3">
+                          <Button
+                            onClick={() => removeScenario(scenario.id)}
+                            variant="ghost"
+                            size="icon"
+                            data-testid={`button-remove-${scenario.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <p className="text-center text-sm text-muted-foreground mt-8">
           This calculator provides estimates based on the information you provide. 
