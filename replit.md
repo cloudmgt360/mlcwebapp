@@ -19,6 +19,7 @@ A comprehensive financial calculator web application built with React, TypeScrip
 - ✅ Created loan comparison tool for evaluating multiple scenarios
 - ✅ Added CSV export functionality with proper formatting and escaping
 - ✅ Fixed critical bug in extra payment calculations (payment clamping)
+- ✅ Updated design: Blue background (#02066f), Arial font, white input fields with black borders
 
 ## User Preferences
 
@@ -43,8 +44,9 @@ Preferred communication style: Simple, everyday language.
 **Design Philosophy:**
 - System-based approach prioritizing clarity and trust
 - Professional fintech aesthetic with calm visual design
-- Light/dark mode support with carefully crafted color palettes
-- Inter font family via Google Fonts for clean typography
+- Blue background (#02066f) for distinctive branding
+- Arial font family for clean, readable typography
+- White input fields with prominent black borders (2px) for clear data entry
 - Contained layout with max-width of 672px (max-w-2xl) for focused interaction
 
 **Component Structure:**

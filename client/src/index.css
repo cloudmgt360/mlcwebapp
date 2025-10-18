@@ -213,6 +213,26 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  textarea {
+    background-color: white !important;
+    color: black !important;
+    border: 2px solid black !important;
+  }
+
+  input[type="text"]::placeholder,
+  input[type="number"]::placeholder,
+  input[type="email"]::placeholder,
+  input[type="password"]::placeholder,
+  input[type="search"]::placeholder,
+  textarea::placeholder {
+    color: #666 !important;
+  }
 }
 
 /**
