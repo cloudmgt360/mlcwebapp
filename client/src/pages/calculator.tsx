@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calculator as CalcIcon, DollarSign, Percent, Calendar, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
+import { Calculator as CalcIcon, DollarSign, Percent, Calendar, RotateCcw, ChevronDown, ChevronUp, PieChart as PieChartIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,11 +11,28 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Legend,
+  Tooltip,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Area,
+  AreaChart,
+} from "recharts";
 
 interface LoanResults {
   monthlyPayment: string;
   totalPayment: string;
   totalInterest: string;
+  principal: string;
 }
 
 interface AmortizationPayment {
@@ -86,6 +103,7 @@ export default function Calculator() {
       monthlyPayment: monthlyPayment.toFixed(2),
       totalPayment: totalPayment.toFixed(2),
       totalInterest: totalInterest.toFixed(2),
+      principal: P.toFixed(2),
     });
 
     const amortizationSchedule = calculateAmortizationSchedule(P, r, n, monthlyPayment);
@@ -110,6 +128,22 @@ export default function Calculator() {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(numValue);
+  };
+
+  const formatCompactCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+      notation: 'compact',
+      compactDisplay: 'short',
+    }).format(value);
+  };
+
+  const CHART_COLORS = {
+    principal: 'hsl(var(--primary))',
+    interest: 'hsl(var(--chart-2))',
   };
 
   return (
@@ -253,84 +287,187 @@ export default function Calculator() {
                 </div>
 
                 {schedule.length > 0 && (
-                  <Collapsible open={showSchedule} onOpenChange={setShowSchedule} className="mt-6">
-                    <CollapsibleTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-between h-12 font-semibold"
-                        data-testid="button-toggle-schedule"
-                      >
-                        <span>View Amortization Schedule</span>
-                        {showSchedule ? (
-                          <ChevronUp className="w-4 h-4" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="mt-4">
-                      <Card>
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-base">Payment Breakdown</CardTitle>
-                          <CardDescription>
-                            Month-by-month details of your loan payments
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                          <ScrollArea className="h-[400px]">
-                            <div className="px-6">
-                              <table className="w-full">
-                                <thead className="sticky top-0 bg-card z-10">
-                                  <tr className="border-b">
-                                    <th className="text-left py-3 px-2 text-xs font-semibold text-muted-foreground">
-                                      Month
-                                    </th>
-                                    <th className="text-right py-3 px-2 text-xs font-semibold text-muted-foreground">
-                                      Payment
-                                    </th>
-                                    <th className="text-right py-3 px-2 text-xs font-semibold text-muted-foreground">
-                                      Principal
-                                    </th>
-                                    <th className="text-right py-3 px-2 text-xs font-semibold text-muted-foreground">
-                                      Interest
-                                    </th>
-                                    <th className="text-right py-3 px-2 text-xs font-semibold text-muted-foreground">
-                                      Balance
-                                    </th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {schedule.map((payment) => (
-                                    <tr
-                                      key={payment.paymentNumber}
-                                      className="border-b last:border-b-0 hover-elevate"
-                                      data-testid={`schedule-row-${payment.paymentNumber}`}
-                                    >
-                                      <td className="py-3 px-2 text-sm font-medium">
-                                        {payment.paymentNumber}
-                                      </td>
-                                      <td className="py-3 px-2 text-sm text-right">
-                                        {formatCurrency(payment.payment)}
-                                      </td>
-                                      <td className="py-3 px-2 text-sm text-right text-primary">
-                                        {formatCurrency(payment.principal)}
-                                      </td>
-                                      <td className="py-3 px-2 text-sm text-right text-chart-2">
-                                        {formatCurrency(payment.interest)}
-                                      </td>
-                                      <td className="py-3 px-2 text-sm text-right font-medium">
-                                        {formatCurrency(payment.balance)}
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                  <div className="mt-6 space-y-4">
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center gap-2">
+                          <PieChartIcon className="w-5 h-5 text-primary" />
+                          <CardTitle className="text-base">Payment Visualization</CardTitle>
+                        </div>
+                        <CardDescription>
+                          Visual breakdown of your loan over time
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Tabs defaultValue="breakdown" className="w-full">
+                          <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="breakdown" data-testid="tab-breakdown">
+                              Cost Breakdown
+                            </TabsTrigger>
+                            <TabsTrigger value="overtime" data-testid="tab-overtime">
+                              Balance Over Time
+                            </TabsTrigger>
+                          </TabsList>
+                          <TabsContent value="breakdown" className="mt-6">
+                            <div className="h-[300px]">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                  <Pie
+                                    data={[
+                                      { name: 'Principal', value: parseFloat(results.principal), fill: CHART_COLORS.principal },
+                                      { name: 'Interest', value: parseFloat(results.totalInterest), fill: CHART_COLORS.interest },
+                                    ]}
+                                    cx="50%"
+                                    cy="50%"
+                                    labelLine={false}
+                                    label={({ name, value }) => `${name}: ${formatCompactCurrency(value)}`}
+                                    outerRadius={80}
+                                    dataKey="value"
+                                  >
+                                  </Pie>
+                                  <Tooltip
+                                    formatter={(value: number) => formatCurrency(value)}
+                                    contentStyle={{
+                                      backgroundColor: 'hsl(var(--popover))',
+                                      border: '1px solid hsl(var(--border))',
+                                      borderRadius: '6px',
+                                    }}
+                                  />
+                                  <Legend />
+                                </PieChart>
+                              </ResponsiveContainer>
                             </div>
-                          </ScrollArea>
-                        </CardContent>
-                      </Card>
-                    </CollapsibleContent>
-                  </Collapsible>
+                          </TabsContent>
+                          <TabsContent value="overtime" className="mt-6">
+                            <div className="h-[300px]">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart
+                                  data={schedule.filter((_, idx) => idx % Math.ceil(schedule.length / 60) === 0 || idx === schedule.length - 1)}
+                                  margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                                >
+                                  <defs>
+                                    <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="5%" stopColor={CHART_COLORS.principal} stopOpacity={0.3}/>
+                                      <stop offset="95%" stopColor={CHART_COLORS.principal} stopOpacity={0}/>
+                                    </linearGradient>
+                                  </defs>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                  <XAxis
+                                    dataKey="paymentNumber"
+                                    label={{ value: 'Month', position: 'insideBottom', offset: -5 }}
+                                    tick={{ fontSize: 12 }}
+                                    stroke="hsl(var(--muted-foreground))"
+                                  />
+                                  <YAxis
+                                    tickFormatter={(value) => formatCompactCurrency(value)}
+                                    tick={{ fontSize: 12 }}
+                                    stroke="hsl(var(--muted-foreground))"
+                                  />
+                                  <Tooltip
+                                    formatter={(value: number) => formatCurrency(value)}
+                                    labelFormatter={(label) => `Month ${label}`}
+                                    contentStyle={{
+                                      backgroundColor: 'hsl(var(--popover))',
+                                      border: '1px solid hsl(var(--border))',
+                                      borderRadius: '6px',
+                                    }}
+                                  />
+                                  <Area
+                                    type="monotone"
+                                    dataKey="balance"
+                                    stroke={CHART_COLORS.principal}
+                                    strokeWidth={2}
+                                    fillOpacity={1}
+                                    fill="url(#colorBalance)"
+                                    name="Remaining Balance"
+                                  />
+                                </AreaChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </TabsContent>
+                        </Tabs>
+                      </CardContent>
+                    </Card>
+
+                    <Collapsible open={showSchedule} onOpenChange={setShowSchedule}>
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between h-12 font-semibold"
+                          data-testid="button-toggle-schedule"
+                        >
+                          <span>View Detailed Amortization Schedule</span>
+                          {showSchedule ? (
+                            <ChevronUp className="w-4 h-4" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-4">
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-base">Payment Breakdown</CardTitle>
+                            <CardDescription>
+                              Month-by-month details of your loan payments
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="p-0">
+                            <ScrollArea className="h-[400px]">
+                              <div className="px-6">
+                                <table className="w-full">
+                                  <thead className="sticky top-0 bg-card z-10">
+                                    <tr className="border-b">
+                                      <th className="text-left py-3 px-2 text-xs font-semibold text-muted-foreground">
+                                        Month
+                                      </th>
+                                      <th className="text-right py-3 px-2 text-xs font-semibold text-muted-foreground">
+                                        Payment
+                                      </th>
+                                      <th className="text-right py-3 px-2 text-xs font-semibold text-muted-foreground">
+                                        Principal
+                                      </th>
+                                      <th className="text-right py-3 px-2 text-xs font-semibold text-muted-foreground">
+                                        Interest
+                                      </th>
+                                      <th className="text-right py-3 px-2 text-xs font-semibold text-muted-foreground">
+                                        Balance
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {schedule.map((payment) => (
+                                      <tr
+                                        key={payment.paymentNumber}
+                                        className="border-b last:border-b-0 hover-elevate"
+                                        data-testid={`schedule-row-${payment.paymentNumber}`}
+                                      >
+                                        <td className="py-3 px-2 text-sm font-medium">
+                                          {payment.paymentNumber}
+                                        </td>
+                                        <td className="py-3 px-2 text-sm text-right">
+                                          {formatCurrency(payment.payment)}
+                                        </td>
+                                        <td className="py-3 px-2 text-sm text-right text-primary">
+                                          {formatCurrency(payment.principal)}
+                                        </td>
+                                        <td className="py-3 px-2 text-sm text-right text-chart-2">
+                                          {formatCurrency(payment.interest)}
+                                        </td>
+                                        <td className="py-3 px-2 text-sm text-right font-medium">
+                                          {formatCurrency(payment.balance)}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </ScrollArea>
+                          </CardContent>
+                        </Card>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </div>
                 )}
               </div>
             )}
