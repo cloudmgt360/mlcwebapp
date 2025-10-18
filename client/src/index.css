@@ -14,9 +14,9 @@
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
 
-  --background: 220 15% 97%;
+  --background: 238 96% 22%;
 
-  --foreground: 220 15% 15%;
+  --foreground: 0 0% 100%;
 
   --border: 220 13% 91%;
 
@@ -76,7 +76,7 @@
   --chart-4: 30 80% 55%;
   --chart-5: 340 75% 55%;
 
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: Arial, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
   --radius: .5rem; /* 8px */
@@ -132,9 +132,9 @@
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  --background: 220 15% 9%;
+  --background: 238 96% 22%;
 
-  --foreground: 220 15% 95%;
+  --foreground: 0 0% 100%;
 
   --border: 220 13% 20%;
 
