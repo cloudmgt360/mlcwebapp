@@ -1,10 +1,16 @@
 import { useState } from "react";
-import { Calculator as CalcIcon, DollarSign, Percent, Calendar, RotateCcw } from "lucide-react";
+import { Calculator as CalcIcon, DollarSign, Percent, Calendar, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface LoanResults {
   monthlyPayment: string;
@@ -12,12 +18,48 @@ interface LoanResults {
   totalInterest: string;
 }
 
+interface AmortizationPayment {
+  paymentNumber: number;
+  payment: number;
+  principal: number;
+  interest: number;
+  balance: number;
+}
+
 export default function Calculator() {
   const [amount, setAmount] = useState("");
   const [rate, setRate] = useState("");
   const [years, setYears] = useState("");
   const [results, setResults] = useState<LoanResults | null>(null);
+  const [schedule, setSchedule] = useState<AmortizationPayment[]>([]);
+  const [showSchedule, setShowSchedule] = useState(false);
   const { toast } = useToast();
+
+  const calculateAmortizationSchedule = (
+    principal: number,
+    monthlyRate: number,
+    months: number,
+    monthlyPayment: number
+  ): AmortizationPayment[] => {
+    const schedule: AmortizationPayment[] = [];
+    let remainingBalance = principal;
+
+    for (let i = 1; i <= months; i++) {
+      const interestPayment = remainingBalance * monthlyRate;
+      const principalPayment = monthlyPayment - interestPayment;
+      remainingBalance -= principalPayment;
+
+      schedule.push({
+        paymentNumber: i,
+        payment: monthlyPayment,
+        principal: principalPayment,
+        interest: interestPayment,
+        balance: Math.max(0, remainingBalance),
+      });
+    }
+
+    return schedule;
+  };
 
   const calculateLoan = () => {
     const P = parseFloat(amount);
@@ -45,6 +87,10 @@ export default function Calculator() {
       totalPayment: totalPayment.toFixed(2),
       totalInterest: totalInterest.toFixed(2),
     });
+
+    const amortizationSchedule = calculateAmortizationSchedule(P, r, n, monthlyPayment);
+    setSchedule(amortizationSchedule);
+    setShowSchedule(false);
   };
 
   const resetForm = () => {
@@ -52,15 +98,18 @@ export default function Calculator() {
     setRate("");
     setYears("");
     setResults(null);
+    setSchedule([]);
+    setShowSchedule(false);
   };
 
-  const formatCurrency = (value: string) => {
+  const formatCurrency = (value: string | number) => {
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(parseFloat(value));
+    }).format(numValue);
   };
 
   return (
@@ -167,7 +216,7 @@ export default function Calculator() {
             </div>
 
             {results && (
-              <div className="mt-8 pt-8 border-t space-y-4">
+              <div className="mt-8 pt-8 border-t space-y-6">
                 <h3 className="text-lg font-semibold mb-4">Your Results</h3>
                 
                 <div className="space-y-4">
@@ -202,6 +251,87 @@ export default function Calculator() {
                     </div>
                   </div>
                 </div>
+
+                {schedule.length > 0 && (
+                  <Collapsible open={showSchedule} onOpenChange={setShowSchedule} className="mt-6">
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between h-12 font-semibold"
+                        data-testid="button-toggle-schedule"
+                      >
+                        <span>View Amortization Schedule</span>
+                        {showSchedule ? (
+                          <ChevronUp className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-4">
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base">Payment Breakdown</CardTitle>
+                          <CardDescription>
+                            Month-by-month details of your loan payments
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                          <ScrollArea className="h-[400px]">
+                            <div className="px-6">
+                              <table className="w-full">
+                                <thead className="sticky top-0 bg-card z-10">
+                                  <tr className="border-b">
+                                    <th className="text-left py-3 px-2 text-xs font-semibold text-muted-foreground">
+                                      Month
+                                    </th>
+                                    <th className="text-right py-3 px-2 text-xs font-semibold text-muted-foreground">
+                                      Payment
+                                    </th>
+                                    <th className="text-right py-3 px-2 text-xs font-semibold text-muted-foreground">
+                                      Principal
+                                    </th>
+                                    <th className="text-right py-3 px-2 text-xs font-semibold text-muted-foreground">
+                                      Interest
+                                    </th>
+                                    <th className="text-right py-3 px-2 text-xs font-semibold text-muted-foreground">
+                                      Balance
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {schedule.map((payment) => (
+                                    <tr
+                                      key={payment.paymentNumber}
+                                      className="border-b last:border-b-0 hover-elevate"
+                                      data-testid={`schedule-row-${payment.paymentNumber}`}
+                                    >
+                                      <td className="py-3 px-2 text-sm font-medium">
+                                        {payment.paymentNumber}
+                                      </td>
+                                      <td className="py-3 px-2 text-sm text-right">
+                                        {formatCurrency(payment.payment)}
+                                      </td>
+                                      <td className="py-3 px-2 text-sm text-right text-primary">
+                                        {formatCurrency(payment.principal)}
+                                      </td>
+                                      <td className="py-3 px-2 text-sm text-right text-chart-2">
+                                        {formatCurrency(payment.interest)}
+                                      </td>
+                                      <td className="py-3 px-2 text-sm text-right font-medium">
+                                        {formatCurrency(payment.balance)}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </ScrollArea>
+                        </CardContent>
+                      </Card>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
               </div>
             )}
           </CardContent>
