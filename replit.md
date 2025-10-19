@@ -118,7 +118,15 @@ Preferred communication style: Simple, everyday language.
 **Environment Configuration:**
 - `DATABASE_URL` environment variable required but may be unused
 - `NODE_ENV` controls development vs production behavior
+- `PORT` environment variable for server binding (defaults to 5000, auto-set by platforms)
 - `REPL_ID` detection for Replit-specific tooling
+
+**DigitalOcean App Platform Deployment:**
+- Ready for deployment with pre-configured `.do/app.yaml`
+- See `DEPLOYMENT.md` for complete deployment guide
+- Supports automatic deployments on git push
+- No database required - all calculations client-side
+- Estimated cost: $5-7/month for typical usage
 
 ## External Dependencies
 
