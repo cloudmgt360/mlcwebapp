@@ -416,7 +416,7 @@ export default function Calculator() {
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
               <Button
                 onClick={calculateLoan}
-                className="h-12 flex-1 font-semibold"
+                className="h-12 flex-1 font-semibold bg-red-600 hover:bg-red-600 text-white border-red-700"
                 data-testid="button-calculate"
               >
                 <CalcIcon className="w-4 h-4 mr-2" />

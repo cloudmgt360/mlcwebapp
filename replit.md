@@ -20,6 +20,7 @@ A comprehensive financial calculator web application built with React, TypeScrip
 - ✅ Added CSV export functionality with proper formatting and escaping
 - ✅ Fixed critical bug in extra payment calculations (payment clamping)
 - ✅ Updated design: Blue background (#02066f), Arial font, white input fields with black borders
+- ✅ Styled Calculate button with red background (bg-red-600) and white text
 
 ## User Preferences
 
@@ -47,6 +48,7 @@ Preferred communication style: Simple, everyday language.
 - Blue background (#02066f) for distinctive branding
 - Arial font family for clean, readable typography
 - White input fields with prominent black borders (2px) for clear data entry
+- Red Calculate button (bg-red-600) with white text for primary action prominence
 - Contained layout with max-width of 672px (max-w-2xl) for focused interaction
 
 **Component Structure:**
