@@ -27,8 +27,10 @@ Replace:
 ### 2. Environment Variables
 
 The application automatically uses these environment variables:
-- `PORT` - HTTP port (automatically set by DigitalOcean)
+- `PORT` - HTTP port (**automatically set by DigitalOcean** - do not override)
 - `NODE_ENV` - Set to `production` for deployments
+
+**Important**: Do NOT manually set the `PORT` environment variable. DigitalOcean App Platform automatically injects this value, and overriding it can cause binding conflicts.
 
 **No database required** - This calculator runs entirely client-side with no data persistence.
 
@@ -89,10 +91,10 @@ If you prefer to configure manually without `app.yaml`:
 
 3. **Environment Variables**:
    - Add `NODE_ENV` = `production`
-   - PORT is automatically set by DigitalOcean
+   - **DO NOT** set PORT - DigitalOcean sets this automatically
 
 4. **HTTP Configuration**:
-   - HTTP Port: 8080 (or use default)
+   - HTTP Port: 8080 (this tells DigitalOcean what port your app listens on)
    - Routes: `/` (catch-all)
 
 5. **Health Check**:
